@@ -1,20 +1,111 @@
-<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-------- LINK de CSS -------->
-    <link rel="stylesheet" href="styles.css">
-    <!----------------------------->
-    <title>Visualizador PDF</title>
+    <title>Native PDF Reader</title>
+    <style>
+        #pagination {
+            display: flex;
+            flex-wrap: wrap;
+            position: sticky;
+            top: 0;
+            background: rgba(255,255,255,0.9);
+            justify-content: center;
+            padding: 15px;
+        }
+
+        #source {
+            position: fixed;
+            margin-top: 40px;
+            top: 0;
+            left: 0;
+            background: rgba(255,255,255,0.9);
+            justify-content: center;
+            padding: 15px;
+        }
+
+        #pagination a {
+            margin: 5px;
+            display: block;
+            text-decoration: none;
+        }
+
+        #main {
+            width: 100%;
+            overflow-x: auto;
+        }
+    </style>
 </head>
 <body>
-    <!-- Título -->
-    <h1 class="title">Visualizador de PDF</h1>
-    <!-- title -->
-    <object class="pdfview" type="application/pdf" data="https://linux.doompdf.dev/linux.pdf"></object>
-    <!-- Aprende más sobre object tag: https://www.w3schools.com/tags/tag_object.asp -->
-    <!-- Puede usarse tanto archivos PDF en la Web o locales -->
+    
+    <div id="source">
+        <ul>
+            <li>Checkout the source in</li>
+            <li>
+                <a href="https://github.com/bakunya/html-pdf-reader">My Github</a>
+            </li>
+            <li>
+                <a href="https://www.medeveloper.me/">My Blog</a>
+            </li>
+        </ul>
+    </div>
+    <div id="pagination"></div>
+    <div id="main"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js" integrity="sha512-t2JWqzirxOmR9MZKu+BMz0TNHe55G5BZ/tfTmXMlxpUY8tsTo3QMD27QGoYKZKFAraIPDhFv56HLdN11ctmiTQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+    <script>
+        let allPages = 0;
+        const container = document.getElementById("main")
+        const containerPagination = document.getElementById("pagination")
+        const loadingTask = pdfjsLib.getDocument("./linux.pdf")
+
+        loadingTask
+            .promise
+            .then(async (pdf) => {
+                allPages = pdf._pdfInfo.numPages
+
+                for (let i = 1; i <= allPages; i++) {
+                    const page = await pdf.getPage(i)
+
+                    const scale = 1.5
+                    const viewport = page.getViewport({ scale })
+                    const outputScale = window.devicePixelRatio || 1
+                    const canvas = document.createElement("canvas")
+                    const context = canvas.getContext("2d")
+
+                    canvas.width =  Math.floor(viewport.width * outputScale)
+                    canvas.height = Math.floor(viewport.height * outputScale);
+                    canvas.style.width = Math.floor(viewport.width) + "px";
+                    canvas.style.height =  Math.floor(viewport.height) + "px";
+                    canvas.style.display = "block";
+                    canvas.style.margin =  "auto";
+                    canvas.id = page._pageIndex
+
+                    const transform = outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null
+
+                    const renderContext = {
+                        canvasContext: context,
+                        transform: transform,
+                        viewport: viewport
+                    };
+                    page.render(renderContext);
+
+                    container.append(canvas)
+
+                }
+
+
+                for (let i = 0; i < allPages; i++) {
+                    const anchor = document.createElement("a")
+                    const num = i
+                    anchor.href = `#${i}`
+                    anchor.textContent = num + 1
+                    containerPagination.append(anchor)
+                }
+                                    
+            })
+    </script>
 </body>
 </html>
